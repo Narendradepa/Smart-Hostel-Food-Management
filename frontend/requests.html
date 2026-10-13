@@ -1,68 +1,156 @@
+
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Food Requests</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Request</title>
     <link rel="stylesheet" href="style.css">
 </head>
 
 <body>
-
     <h1>Food Request</h1>
 
     <p>Submit your food request to the hostel food service.</p>
 
-    <label>Request:</label><br>
-    <textarea rows="5" cols="40"
-        placeholder="Enter your food request"></textarea>
+    <form id="foodRequestForm">
+        <div>
+            <label for="foodItem">Food:</label><br>
+            <input
+                type="text"
+                id="foodItem"
+                name="foodItem"
+                placeholder="Enter food item"
+                required
+                maxlength="100"
+            >
+        </div>
 
-    <br><br>
+        <br>
 
-    <button onclick="submitRequest()">Submit Request</button>
+        <div>
+            <label for="quantity">Quantity (servings):</label><br>
+            <input
+                type="number"
+                id="quantity"
+                name="quantity"
+                min="1"
+                max="100"
+                step="1"
+                value="1"
+                required
+            >
+        </div>
 
-    <br><br>
+        <br>
 
-    <button onclick="window.location.href='student-dashboard.html'">
+        <div>
+            <label for="notes">Notes (optional):</label><br>
+            <textarea
+                id="notes"
+                name="notes"
+                rows="5"
+                cols="40"
+                maxlength="500"
+                placeholder="Enter special instructions, if any"
+            ></textarea>
+        </div>
+
+        <br>
+
+        <button type="submit" id="submitButton">
+            Submit Request
+        </button>
+
+        <p id="statusMessage" role="status" aria-live="polite"></p>
+    </form>
+
+    <button
+        type="button"
+        onclick="window.location.href='student-dashboard.html'"
+    >
         Back to Dashboard
     </button>
+
     <script>
+        const form = document.getElementById("foodRequestForm");
+        const submitButton = document.getElementById("submitButton");
+        const statusMessage = document.getElementById("statusMessage");
 
-async function submitRequest() {
-    const requestText = document.querySelector("textarea").value.trim();
+        form.addEventListener("submit", async function (event) {
+            event.preventDefault();
 
-    if (requestText === "") {
-        alert("Please enter a food request.");
-        return;
-    }
+            const foodItem = document.getElementById("foodItem").value.trim();
+            const quantity = Number(
+                document.getElementById("quantity").value
+            );
+            const notes = document.getElementById("notes").value.trim();
 
-    try {
-        const response = await fetch("http://localhost:3000/api/requests", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                foodItem: requestText,
-                quantity: 1,
-                notes: ""
-            })
+            statusMessage.textContent = "";
+            statusMessage.style.color = "";
+
+            if (!foodItem) {
+                statusMessage.textContent = "Please enter a food item.";
+                return;
+            }
+
+            if (
+                !Number.isInteger(quantity) ||
+                quantity < 1 ||
+                quantity > 100
+            ) {
+                statusMessage.textContent =
+                    "Quantity must be a whole number between 1 and 100.";
+                return;
+            }
+
+            submitButton.disabled = true;
+            submitButton.textContent = "Submitting...";
+
+            try {
+                const response = await fetch(
+                    "http://localhost:3000/api/requests",
+                    {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({
+                            foodItem: foodItem,
+                            quantity: quantity,
+                            notes: notes
+                        })
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(
+                        result.message || "Failed to submit request."
+                    );
+                }
+
+                statusMessage.style.color = "green";
+                statusMessage.textContent =
+                    result.message || "Food request submitted successfully!";
+
+                form.reset();
+                document.getElementById("quantity").value = "1";
+
+            } catch (error) {
+                statusMessage.style.color = "red";
+                statusMessage.textContent =
+                    error.message ||
+                    "Could not connect to the backend. Please try again.";
+
+                console.error("Food request error:", error);
+
+            } finally {
+                submitButton.disabled = false;
+                submitButton.textContent = "Submit Request";
+            }
         });
-
-        const result = await response.json();
-
-        if (!response.ok) {
-            alert(result.message || "Failed to submit request.");
-            return;
-        }
-
-        alert(result.message);
-        document.querySelector("textarea").value = "";
-
-    } catch (error) {
-        alert("Could not connect to the backend. Make sure your server is running.");
-        console.error("Request error:", error);
-    }
-}
-</script>
-
+    </script>
 </body>
 </html>

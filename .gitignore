@@ -1,3 +1,4 @@
+
 # Node.js dependencies
 node_modules/
 
@@ -8,9 +9,11 @@ node_modules/
 
 # Logs
 *.log
+npm-debug.log*
 
 # SQLite database and related files
 database/*.db
+database/*.db-journal
 database/*.db-shm
 database/*.db-wal
 
