@@ -1,13 +1,12 @@
-
 const Database = require("../backend/node_modules/better-sqlite3");
 const path = require("path");
 
-// Store the database file inside the database folder
-const db = new Database(
-    path.join(__dirname, "hostel-food.db")
-);
+const dbPath = process.env.DATABASE_PATH
+    ? path.resolve(process.env.DATABASE_PATH)
+    : path.join(__dirname, "hostel-food.db");
 
-// Create the food requests table if it does not exist
+const db = new Database(dbPath);
+
 db.exec(`
     CREATE TABLE IF NOT EXISTS food_requests (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
