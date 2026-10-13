@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Menu Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Menu Management</h1>
+
+    <h2>Breakfast</h2>
+    <input type="text" placeholder="Enter breakfast menu">
+
+    <br><br>
+
+    <h2>Lunch</h2>
+    <input type="text" placeholder="Enter lunch menu">
+
+    <br><br>
+
+    <h2>Dinner</h2>
+    <input type="text" placeholder="Enter dinner menu">
+
+    <br><br>
+
+    <button onclick="updateMenu()">Update Menu</button>
+
+    <br><br>
+
+    <button onclick="window.location.href='admin-dashboard.html'">
+        Back to Admin Dashboard
+    </button>
+    <script>
+function updateMenu() {
+    let inputs = document.querySelectorAll("input");
+
+    let breakfast = inputs[0].value;
+    let lunch = inputs[1].value;
+    let dinner = inputs[2].value;
+
+    if (breakfast.trim() === "" || lunch.trim() === "" || dinner.trim() === "") {
+        alert("Please enter all three meals.");
+        return;
+    }
+
+    alert("Menu updated successfully!");
+}
+</script>
+
+</body>
+</html>

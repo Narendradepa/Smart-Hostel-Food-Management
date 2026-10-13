@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Requests</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>Food Request</h1>
+
+    <p>Submit your food request to the hostel food service.</p>
+
+    <label>Request:</label><br>
+    <textarea rows="5" cols="40"
+        placeholder="Enter your food request"></textarea>
+
+    <br><br>
+
+    <button onclick="submitRequest()">Submit Request</button>
+
+    <br><br>
+
+    <button onclick="window.location.href='student-dashboard.html'">
+        Back to Dashboard
+    </button>
+    <script>
+
+async function submitRequest() {
+    const requestText = document.querySelector("textarea").value.trim();
+
+    if (requestText === "") {
+        alert("Please enter a food request.");
+        return;
+    }
+
+    try {
+        const response = await fetch("http://localhost:3000/api/requests", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                foodItem: requestText,
+                quantity: 1,
+                notes: ""
+            })
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+            alert(result.message || "Failed to submit request.");
+            return;
+        }
+
+        alert(result.message);
+        document.querySelector("textarea").value = "";
+
+    } catch (error) {
+        alert("Could not connect to the backend. Make sure your server is running.");
+        console.error("Request error:", error);
+    }
+}
+</script>
+
+</body>
+</html>

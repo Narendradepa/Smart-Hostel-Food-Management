@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Complaints</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Food Complaint</h1>
+
+    <p>Submit your complaint about the hostel food service.</p>
+
+    <label>Complaint:</label><br>
+
+    <textarea rows="5" cols="40"
+        placeholder="Enter your complaint"></textarea>
+
+    <br><br>
+
+    <button onclick="submitComplaint()">Submit Complaint</button>
+
+    <br><br>
+
+    <button onclick="window.location.href='student-dashboard.html'">
+        Back to Dashboard
+    </button>
+    <script>
+function submitComplaint() {
+    let complaint = document.querySelector("textarea").value;
+
+    if (complaint.trim() === "") {
+        alert("Please enter your complaint.");
+        return;
+    }
+
+    alert("Complaint submitted successfully!");
+}
+</script>
+
+</body>
+</html>

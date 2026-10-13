@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Feedback</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Food Feedback</h1>
+
+    <p>Share your feedback about the hostel food.</p>
+
+    <label>Feedback:</label><br>
+
+    <textarea rows="5" cols="40"
+        placeholder="Enter your feedback"></textarea>
+
+    <br><br>
+
+    <button onclick="submitFeedback()">Submit Feedback</button>
+
+    <br><br>
+
+    <button onclick="window.location.href='student-dashboard.html'">
+        Back to Dashboard
+    </button>
+    <script>
+function submitFeedback() {
+    let feedback = document.querySelector("textarea").value;
+
+    if (feedback.trim() === "") {
+        alert("Please enter your feedback.");
+        return;
+    }
+
+    alert("Feedback submitted successfully!");
+}
+</script>
+
+</body>
+</script>
+</html>

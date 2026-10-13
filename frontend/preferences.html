@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Food Preferences</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>Food Preferences</h1>
+
+    <h2>Select Your Preferences</h2>
+
+    <label>
+        <input type="checkbox"> Vegetarian
+    </label>
+
+    <br><br>
+
+    <label>
+        <input type="checkbox"> Non-Vegetarian
+    </label>
+
+    <br><br>
+
+    <label>
+        <input type="checkbox"> Less Spicy Food
+    </label>
+
+    <br><br>
+
+    <button onclick="savePreferences()">Save Preferences</button>
+
+    <br><br>
+
+    <button onclick="window.location.href='student-dashboard.html'">
+        Back to Dashboard
+    </button>
+    <script>
+function savePreferences() {
+    let preferences = document.querySelectorAll("input[type='checkbox']:checked");
+
+    if (preferences.length === 0) {
+        alert("Please select at least one preference.");
+        return;
+    }
+
+    alert("Food preferences saved successfully!");
+}
+</script>
+
+</body>
+</html>

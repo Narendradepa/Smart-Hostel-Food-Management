@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Staff Rating</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Staff Rating</h1>
+
+    <p>Rate the hostel food service staff.</p>
+
+    <label>Rating:</label><br>
+
+    <select>
+        <option>5 - Excellent</option>
+        <option>4 - Very Good</option>
+        <option>3 - Good</option>
+        <option>2 - Average</option>
+        <option>1 - Poor</option>
+    </select>
+
+    <br><br>
+
+    <button onclick="submitRating()">Submit Rating</button>
+
+    <br><br>
+
+    <button onclick="window.location.href='student-dashboard.html'">
+        Back to Dashboard
+    </button>
+    <script>
+function submitRating() {
+    let rating = document.querySelector("select").value;
+
+    if (rating === "") {
+        alert("Please select a rating.");
+        return;
+    }
+
+    alert("Staff rating submitted successfully!");
+}
+</script>
+
+</body>
+</html>

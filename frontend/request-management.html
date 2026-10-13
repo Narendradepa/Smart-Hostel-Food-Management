@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Request Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Request Management</h1>
+
+    <h2>Student Food Requests</h2>
+
+    <div id="requestsList">Loading food requests...</div>
+
+<script>
+async function loadRequests() {
+    const list = document.getElementById("requestsList");
+
+    try {
+        const response = await fetch("http://localhost:3000/api/requests");
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+            throw new Error("Failed to load requests");
+        }
+
+        if (result.requests.length === 0) {
+            list.textContent = "No food requests found.";
+            return;
+        }
+
+        list.replaceChildren();
+
+        result.requests.forEach(request => {
+            const item = document.createElement("div");
+            const title = document.createElement("h3");
+            const details = document.createElement("p");
+
+            title.textContent = "Request #" + request.id;
+            details.textContent =
+                "Food: " + request.food_item +
+                " | Quantity: " + request.quantity +
+                " | Notes: " + (request.notes || "None") +
+                " | Created: " + request.created_at;
+
+            item.append(title, details);
+            list.appendChild(item);
+        });
+    } catch (error) {
+        list.textContent =
+            "Could not load requests. Please check that the backend is running.";
+        console.error(error);
+    }
+}
+
+loadRequests();
+</script>
+    <br>
+
+    <button onclick="window.location.href='admin-dashboard.html'">
+        Back to Admin Dashboard
+    </button>
+
+</body>
+</html>

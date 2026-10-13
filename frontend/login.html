@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login - Hostel Food Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <h1>Hostel Food Management System</h1>
+
+    <h2>Login</h2>
+
+    <form>
+        <label>Login As:</label><br>
+
+    <select>
+        <option>Student</option>
+        <option>Admin</option>
+    </select>
+
+    <br><br>
+        <label>Email:</label><br>
+        <input type="email" placeholder="Enter your email"><br><br>
+
+        <label>Password:</label><br>
+        <input type="password" placeholder="Enter your password"><br><br>
+
+        <button type="button" onclick="loginUser()">Login</button>
+    </form>
+
+<script>
+function loginUser() {
+    let role = document.querySelector("select").value;
+
+    if (role === "Student") {
+        window.location.href = "student-dashboard.html";
+    } else {
+        window.location.href = "admin-dashboard.html";
+    }
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Feedback Management</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <h1>Feedback Management</h1>
+
+    <h2>Student Feedback</h2>
+
+    <p>Student 1: Food quality is good.</p>
+    <button onclick="acknowledgeFeedback(this)">Acknowledge</button>
+    <p>Student 2: Lunch needs more variety.</p>
+    <button onclick="acknowledgeFeedback(this)">Acknowledge</button>
+    <p>Student 3: Dinner was very good.</p>
+    <button onclick="acknowledgeFeedback(this)">Acknowledge</button>
+
+    <br>
+
+    <button onclick="window.location.href='admin-dashboard.html'">
+        Back to Admin Dashboard
+    </button>
+    <script>
+function acknowledgeFeedback(button) {
+    alert("Feedback acknowledged successfully!");
+    button.innerText = "Acknowledged ✓";
+    button.disabled = true;
+}
+</script>
+
+</body>
+</html>

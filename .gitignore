@@ -1,0 +1,19 @@
+# Node.js dependencies
+node_modules/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# SQLite database and related files
+database/*.db
+database/*.db-shm
+database/*.db-wal
+
+# Operating system files
+.DS_Store
+Thumbs.db
