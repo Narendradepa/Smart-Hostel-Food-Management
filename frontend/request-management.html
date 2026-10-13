@@ -17,7 +17,7 @@ async function loadRequests() {
     const list = document.getElementById("requestsList");
 
     try {
-        const response = await fetch("http://localhost:3000/api/requests");
+        const response = await fetch("/api/requests");
         const result = await response.json();
 
         if (!response.ok || !result.success) {
