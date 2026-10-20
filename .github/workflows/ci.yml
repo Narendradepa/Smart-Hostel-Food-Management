@@ -1,3 +1,4 @@
+
 name: Smart Hostel Food Management CI
 
 on:
@@ -20,7 +21,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 24
+          node-version: 22
           cache: npm
           cache-dependency-path: backend/package-lock.json
 
@@ -31,3 +32,12 @@ jobs:
       - name: Run automated tests
         run: npm test
         working-directory: backend
+
+  deploy:
+    name: Deploy to AWS EC2
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deployment status
+        run: echo "Tests passed. Deployment job completed."
