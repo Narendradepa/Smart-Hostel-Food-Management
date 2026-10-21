@@ -1,45 +1,43 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Login - Hostel Food Management</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Choose portal · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
-
 <body>
-
-    <h1>Hostel Food Management System</h1>
-
-    <h2>Login</h2>
-
-    <form>
-        <label>Login As:</label><br>
-
-    <select>
-        <option>Student</option>
-        <option>Admin</option>
-    </select>
-
-    <br><br>
-        <label>Email:</label><br>
-        <input type="email" placeholder="Enter your email"><br><br>
-
-        <label>Password:</label><br>
-        <input type="password" placeholder="Enter your password"><br><br>
-
-        <button type="button" onclick="loginUser()">Login</button>
-    </form>
-
-<script>
-function loginUser() {
-    let role = document.querySelector("select").value;
-
-    if (role === "Student") {
-        window.location.href = "student-dashboard.html";
-    } else {
-        window.location.href = "admin-dashboard.html";
-    }
-}
-</script>
-
+    <header><div class="brand">SMART HOSTEL · FOOD SERVICE</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Welcome</p>
+            <h1>Choose your portal</h1>
+            <p>Students can continue without creating an account. Admin access is protected by the administrator sign-in.</p>
+            <div class="toolbar">
+                <a class="button" href="student-dashboard.html">Continue as student</a>
+                <button class="secondary" id="adminButton" type="button">Administrator sign-in</button>
+            </div>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="index.html">Back to home</a></div>
+    </main>
+    <script>
+        document.getElementById("adminButton").addEventListener("click", async () => {
+            const button = document.getElementById("adminButton");
+            const message = document.getElementById("statusMessage");
+            button.disabled = true;
+            button.textContent = "Checking access…";
+            try {
+                await hostelApp.request("/api/requests?view=summary");
+                window.location.href = "admin-dashboard.html";
+            } catch (error) {
+                hostelApp.showMessage(message, error.message || "Administrator access is required.", false);
+            } finally {
+                button.disabled = false;
+                button.textContent = "Administrator sign-in";
+            }
+        });
+    </script>
 </body>
 </html>

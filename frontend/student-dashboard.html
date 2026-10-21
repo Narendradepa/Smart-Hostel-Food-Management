@@ -1,39 +1,31 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Student Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Student dashboard · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
-
 <body>
-
-    <h1>Student Dashboard</h1>
-
-    <p>Welcome to the Hostel Food Management System</p>
-
-    <hr>
-
-    <h2>Student Services</h2>
-
-    <button onclick="window.location.href='menu.html'">Today's Menu</button>
-    <button onclick="window.location.href='preferences.html'">
-    Food Preferences
-</button>
-    <button onclick="window.location.href='requests.html'">
-    Food Requests
-</button>
-    <button onclick="window.location.href='feedback.html'">
-    Feedback
-</button>
-    <button onclick="window.location.href='complaints.html'">
-    Complaints
-</button>
-    <button onclick="window.location.href='staff-rating.html'">
-    Staff Rating
-</button>
-    <button onclick="window.location.href='notifications.html'">
-    Notifications
-</button>
-
+    <header><div class="brand">SMART HOSTEL · STUDENT PORTAL</div></header>
+    <main>
+        <section class="hero">
+            <p class="eyebrow">Student services</p>
+            <h1>Your food dashboard</h1>
+            <p>Browse the menu, save your preferences, and send requests or feedback to the food team.</p>
+        </section>
+        <section class="card-grid">
+            <a class="card" href="menu.html"><h3>Today's menu</h3><p>See breakfast, lunch, and dinner.</p></a>
+            <a class="card" href="preferences.html"><h3>Food preferences</h3><p>Set diet and spice preferences.</p></a>
+            <a class="card" href="requests.html"><h3>Food requests</h3><p>Send a meal request and get status updates.</p></a>
+            <a class="card" href="feedback.html"><h3>Feedback</h3><p>Share a suggestion with the kitchen.</p></a>
+            <a class="card" href="complaints.html"><h3>Complaints</h3><p>Report and track a service issue.</p></a>
+            <a class="card" href="staff-rating.html"><h3>Staff rating</h3><p>Rate your recent food service.</p></a>
+            <a class="card" href="notifications.html"><h3>Notifications</h3><p>See request and service updates.</p></a>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="index.html">Home</a></div>
+    </main>
+    <footer>Your browser keeps a random student session ID to show your own notifications.</footer>
 </body>
 </html>

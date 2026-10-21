@@ -1,65 +1,71 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Request Management</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Request management · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Request Management</h1>
-
-    <h2>Student Food Requests</h2>
-
-    <div id="requestsList">Loading food requests...</div>
-
-<script>
-async function loadRequests() {
-    const list = document.getElementById("requestsList");
-
-    try {
-        const response = await fetch("/api/requests");
-        const result = await response.json();
-
-        if (!response.ok || !result.success) {
-            throw new Error("Failed to load requests");
+    <header><div class="brand">SMART HOSTEL · ADMIN</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Kitchen queue</p>
+            <h1>Food requests</h1>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+            <div id="requestsList" class="list"><div class="empty">Loading requests…</div></div>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="admin-dashboard.html">Back to admin dashboard</a></div>
+    </main>
+    <script>
+        const statuses = ["pending", "approved", "preparing", "completed", "rejected"];
+        async function loadRequests() {
+            const list = document.getElementById("requestsList");
+            try {
+                const result = await hostelApp.request("/api/requests");
+                list.replaceChildren();
+                if (!result.requests.length) {
+                    list.append(hostelApp.element("div", "empty", "No food requests yet."));
+                    return;
+                }
+                result.requests.forEach((request) => {
+                    const item = hostelApp.element("article", "record");
+                    item.append(hostelApp.element("h3", "", "Request #" + request.id + " · " + request.food_item));
+                    item.append(hostelApp.element("p", "", "Quantity: " + request.quantity + " · Notes: " + (request.notes || "None")));
+                    item.append(hostelApp.element("small", "", "Submitted " + new Date(request.created_at + "Z").toLocaleString()));
+                    const actions = hostelApp.element("div", "actions");
+                    const select = document.createElement("select");
+                    select.setAttribute("aria-label", "Status for request " + request.id);
+                    statuses.forEach((status) => {
+                        const option = document.createElement("option");
+                        option.value = status;
+                        option.textContent = status.replace("_", " ");
+                        option.selected = request.status === status;
+                        select.append(option);
+                    });
+                    const save = hostelApp.element("button", "", "Save status");
+                    save.addEventListener("click", async () => {
+                        save.disabled = true;
+                        try {
+                            const update = await hostelApp.request("/api/requests", {
+                                method: "PUT",
+                                body: JSON.stringify({ action: "update-request", id: request.id, status: select.value })
+                            });
+                            hostelApp.showMessage(document.getElementById("statusMessage"), update.message);
+                            await loadRequests();
+                        } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+                        finally { save.disabled = false; }
+                    });
+                    actions.append(select, save);
+                    item.append(actions);
+                    list.append(item);
+                });
+            } catch (error) {
+                list.replaceChildren(hostelApp.element("div", "empty", "Could not load requests. Admin access may be required. " + error.message));
+            }
         }
-
-        if (result.requests.length === 0) {
-            list.textContent = "No food requests found.";
-            return;
-        }
-
-        list.replaceChildren();
-
-        result.requests.forEach(request => {
-            const item = document.createElement("div");
-            const title = document.createElement("h3");
-            const details = document.createElement("p");
-
-            title.textContent = "Request #" + request.id;
-            details.textContent =
-                "Food: " + request.food_item +
-                " | Quantity: " + request.quantity +
-                " | Notes: " + (request.notes || "None") +
-                " | Created: " + request.created_at;
-
-            item.append(title, details);
-            list.appendChild(item);
-        });
-    } catch (error) {
-        list.textContent =
-            "Could not load requests. Please check that the backend is running.";
-        console.error(error);
-    }
-}
-
-loadRequests();
-</script>
-    <br>
-
-    <button onclick="window.location.href='admin-dashboard.html'">
-        Back to Admin Dashboard
-    </button>
-
+        loadRequests();
+    </script>
 </body>
 </html>

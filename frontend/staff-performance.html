@@ -1,24 +1,50 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Staff Performance</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Staff ratings · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Staff Performance</h1>
-
-    <h2>Staff Ratings</h2>
-
-    <p>Food Staff A: 4.5 / 5</p>
-    <p>Food Staff B: 4.2 / 5</p>
-    <p>Food Staff C: 4.7 / 5</p>
-
-    <br>
-
-    <button onclick="window.location.href='admin-dashboard.html'">
-        Back to Admin Dashboard
-    </button>
-
+    <header><div class="brand">SMART HOSTEL · ADMIN</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Student ratings</p>
+            <h1>Staff performance</h1>
+            <div id="ratingSummary" class="stats"></div>
+            <div id="ratingsList" class="list"><div class="empty">Loading ratings…</div></div>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="admin-dashboard.html">Back to admin dashboard</a></div>
+    </main>
+    <script>
+        (async () => {
+            const list = document.getElementById("ratingsList");
+            try {
+                const result = await hostelApp.request("/api/requests?view=ratings");
+                const summary = document.getElementById("ratingSummary");
+                const card = hostelApp.element("div", "stat");
+                card.append(
+                    hostelApp.element("strong", "", result.reports.average_rating === null ? "—" : result.reports.average_rating + " / 5"),
+                    hostelApp.element("span", "", result.reports.total_ratings + " rating(s)")
+                );
+                summary.append(card);
+                list.replaceChildren();
+                if (!result.ratings.length) {
+                    list.append(hostelApp.element("div", "empty", "No ratings have been submitted yet."));
+                    return;
+                }
+                result.ratings.forEach((rating) => {
+                    const item = hostelApp.element("article", "record");
+                    item.append(hostelApp.element("h3", "", rating.rating + " / 5"));
+                    if (rating.comment) item.append(hostelApp.element("p", "", rating.comment));
+                    item.append(hostelApp.element("small", "", "Submitted " + new Date(rating.created_at + "Z").toLocaleString()));
+                    list.append(item);
+                });
+            } catch (error) { list.replaceChildren(hostelApp.element("div", "empty", "Could not load ratings. Admin access may be required. " + error.message)); }
+        })();
+    </script>
 </body>
 </html>

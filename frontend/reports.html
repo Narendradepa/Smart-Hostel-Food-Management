@@ -1,25 +1,48 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Reports</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Service reports · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Hostel Food Reports</h1>
-
-    <h2>Food Service Summary</h2>
-
-    <p>Total Student Feedback: 25</p>
-    <p>Total Food Requests: 12</p>
-    <p>Total Complaints: 5</p>
-    <p>Average Staff Rating: 4.5 / 5</p>
-
-    <br>
-
-    <button onclick="window.location.href='admin-dashboard.html'">
-        Back to Admin Dashboard
-    </button>
-
+    <header><div class="brand">SMART HOSTEL · ADMIN</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Live totals</p>
+            <h1>Food service reports</h1>
+            <p>Counts reflect submissions currently stored by the hostel food service.</p>
+            <div id="reportStats" class="stats"><div class="stat"><span>Loading report…</span></div></div>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="admin-dashboard.html">Back to admin dashboard</a></div>
+    </main>
+    <script>
+        (async () => {
+            try {
+                const { reports } = await hostelApp.request("/api/requests?view=reports");
+                const entries = [
+                    ["Food requests", reports.total_requests],
+                    ["Pending requests", reports.pending_requests],
+                    ["Student feedback", reports.total_feedback],
+                    ["Complaints", reports.total_complaints],
+                    ["Open complaints", reports.open_complaints],
+                    ["Staff ratings", reports.total_ratings],
+                    ["Average staff rating", reports.average_rating === null ? "—" : reports.average_rating + " / 5"]
+                ];
+                const root = document.getElementById("reportStats");
+                root.replaceChildren();
+                entries.forEach(([label, value]) => {
+                    const card = hostelApp.element("div", "stat");
+                    card.append(hostelApp.element("strong", "", value), hostelApp.element("span", "", label));
+                    root.append(card);
+                });
+            } catch (error) {
+                hostelApp.showMessage(document.getElementById("statusMessage"), "Admin access is required to view reports. " + error.message, false);
+            }
+        })();
+    </script>
 </body>
 </html>

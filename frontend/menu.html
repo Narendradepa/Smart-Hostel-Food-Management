@@ -1,28 +1,42 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Today's Menu</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Today's menu · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
-
 <body>
-
-    <h1>Today's Hostel Food Menu</h1>
-
-    <h2>Breakfast</h2>
-    <p>Idli, Sambar, Chutney</p>
-
-    <h2>Lunch</h2>
-    <p>Rice, Dal, Vegetable Curry</p>
-
-    <h2>Dinner</h2>
-    <p>Chapati, Curry, Rice</p>
-
-    <br>
-
-    <button onclick="window.location.href='student-dashboard.html'">
-        Back to Dashboard
-    </button>
-
+    <header><div class="brand">SMART HOSTEL · TODAY'S MENU</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow" id="menuDate">Loading today's menu</p>
+            <h1>Meals for today</h1>
+            <div class="card-grid" id="menuCards"><div class="empty">Loading menu…</div></div>
+            <p id="menuMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <div class="toolbar">
+            <a class="button" href="requests.html">Make a food request</a>
+            <a class="button secondary" href="student-dashboard.html">Dashboard</a>
+        </div>
+    </main>
+    <script>
+        (async () => {
+            const cards = document.getElementById("menuCards");
+            try {
+                const { menu } = await hostelApp.request("/api/menu");
+                cards.replaceChildren();
+                [["Breakfast", menu.breakfast], ["Lunch", menu.lunch], ["Dinner", menu.dinner]].forEach(([meal, food]) => {
+                    const card = hostelApp.element("article", "card");
+                    card.append(hostelApp.element("h3", "", meal), hostelApp.element("p", "", food));
+                    cards.append(card);
+                });
+                document.getElementById("menuDate").textContent = `Menu for ${menu.menu_date}`;
+            } catch (error) {
+                cards.replaceChildren(hostelApp.element("div", "empty", error.message));
+            }
+        })();
+    </script>
 </body>
 </html>

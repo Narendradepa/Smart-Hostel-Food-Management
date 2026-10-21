@@ -1,34 +1,58 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Feedback Management</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Feedback management · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Feedback Management</h1>
-
-    <h2>Student Feedback</h2>
-
-    <p>Student 1: Food quality is good.</p>
-    <button onclick="acknowledgeFeedback(this)">Acknowledge</button>
-    <p>Student 2: Lunch needs more variety.</p>
-    <button onclick="acknowledgeFeedback(this)">Acknowledge</button>
-    <p>Student 3: Dinner was very good.</p>
-    <button onclick="acknowledgeFeedback(this)">Acknowledge</button>
-
-    <br>
-
-    <button onclick="window.location.href='admin-dashboard.html'">
-        Back to Admin Dashboard
-    </button>
+    <header><div class="brand">SMART HOSTEL · ADMIN</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Student voice</p>
+            <h1>Feedback management</h1>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+            <div id="feedbackList" class="list"><div class="empty">Loading feedback…</div></div>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="admin-dashboard.html">Back to admin dashboard</a></div>
+    </main>
     <script>
-function acknowledgeFeedback(button) {
-    alert("Feedback acknowledged successfully!");
-    button.innerText = "Acknowledged ✓";
-    button.disabled = true;
-}
-</script>
-
+        async function loadFeedback() {
+            const list = document.getElementById("feedbackList");
+            try {
+                const result = await hostelApp.request("/api/requests?view=feedback");
+                list.replaceChildren();
+                if (!result.feedback.length) {
+                    list.append(hostelApp.element("div", "empty", "No feedback has been submitted yet."));
+                    return;
+                }
+                result.feedback.forEach((entry) => {
+                    const item = hostelApp.element("article", "record");
+                    item.append(hostelApp.element("p", "", entry.message));
+                    item.append(hostelApp.element("small", "", "Feedback #" + entry.id + " · " + entry.status + " · " + new Date(entry.created_at + "Z").toLocaleString()));
+                    if (entry.status !== "acknowledged") {
+                        const button = hostelApp.element("button", "", "Acknowledge");
+                        button.addEventListener("click", async () => {
+                            button.disabled = true;
+                            try {
+                                const update = await hostelApp.request("/api/requests", {
+                                    method: "PUT",
+                                    body: JSON.stringify({ action: "acknowledge-feedback", id: entry.id })
+                                });
+                                hostelApp.showMessage(document.getElementById("statusMessage"), update.message);
+                                await loadFeedback();
+                            } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+                            finally { button.disabled = false; }
+                        });
+                        item.append(button);
+                    }
+                    list.append(item);
+                });
+            } catch (error) { list.replaceChildren(hostelApp.element("div", "empty", "Could not load feedback. Admin access may be required. " + error.message)); }
+        }
+        loadFeedback();
+    </script>
 </body>
 </html>

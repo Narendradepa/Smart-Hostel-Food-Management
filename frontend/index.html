@@ -1,25 +1,31 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Hostel Food Management System</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Smart Hostel Food Management</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Smart Hostel Food Management System</h1>
-
-    <p>Welcome to the Hostel Food Management System</p>
-
-    <nav>
-        <a href="login.html">Login</a>
-        <a href="student-dashboard.html">Student Dashboard</a>
-        <a href="menu.html">Food Menu</a>
-        <a href="requests.html">Food Requests</a>
-        <a href="complaints.html">Complaints</a>
-        <a href="feedback.html">Feedback</a>
-    </nav>
-
+    <header><div class="brand">SMART HOSTEL · FOOD SERVICE</div></header>
+    <main>
+        <section class="hero">
+            <p class="eyebrow">Good food, better hostel days</p>
+            <h1>Smart Hostel Food Management</h1>
+            <p>Check today's menu, save your food preferences, and stay connected with the hostel kitchen.</p>
+            <nav>
+                <a class="button" href="login.html">Get started</a>
+                <a class="button secondary" href="menu.html">View today's menu</a>
+            </nav>
+        </section>
+        <section class="card-grid" aria-label="Food services">
+            <a class="card" href="requests.html"><h3>Food requests</h3><p>Ask for a meal or serving and follow its status.</p></a>
+            <a class="card" href="preferences.html"><h3>Your preferences</h3><p>Save dietary and spice preferences for this browser.</p></a>
+            <a class="card" href="feedback.html"><h3>Feedback</h3><p>Share feedback directly with the food team.</p></a>
+            <a class="card" href="complaints.html"><h3>Complaints</h3><p>Report a food service issue and follow its progress.</p></a>
+        </section>
+    </main>
+    <footer>Student submissions use a private browser session ID. Do not enter sensitive personal details.</footer>
 </body>
 </html>

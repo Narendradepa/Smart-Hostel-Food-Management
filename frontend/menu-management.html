@@ -1,51 +1,47 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Menu Management</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Menu management · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Menu Management</h1>
-
-    <h2>Breakfast</h2>
-    <input type="text" placeholder="Enter breakfast menu">
-
-    <br><br>
-
-    <h2>Lunch</h2>
-    <input type="text" placeholder="Enter lunch menu">
-
-    <br><br>
-
-    <h2>Dinner</h2>
-    <input type="text" placeholder="Enter dinner menu">
-
-    <br><br>
-
-    <button onclick="updateMenu()">Update Menu</button>
-
-    <br><br>
-
-    <button onclick="window.location.href='admin-dashboard.html'">
-        Back to Admin Dashboard
-    </button>
+    <header><div class="brand">SMART HOSTEL · ADMIN</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Today's service</p>
+            <h1>Menu management</h1>
+            <form id="menuForm">
+                <div><label for="breakfast">Breakfast</label><input id="breakfast" maxlength="300" required></div>
+                <div><label for="lunch">Lunch</label><input id="lunch" maxlength="300" required></div>
+                <div><label for="dinner">Dinner</label><input id="dinner" maxlength="300" required></div>
+                <button id="saveButton">Publish today's menu</button>
+            </form>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="admin-dashboard.html">Admin dashboard</a><a class="button secondary" href="menu.html">Preview menu</a></div>
+    </main>
     <script>
-function updateMenu() {
-    let inputs = document.querySelectorAll("input");
-
-    let breakfast = inputs[0].value;
-    let lunch = inputs[1].value;
-    let dinner = inputs[2].value;
-
-    if (breakfast.trim() === "" || lunch.trim() === "" || dinner.trim() === "") {
-        alert("Please enter all three meals.");
-        return;
-    }
-
-    alert("Menu updated successfully!");
-}
-</script>
-
+        const form = document.getElementById("menuForm");
+        (async () => {
+            try {
+                const { menu } = await hostelApp.request("/api/menu");
+                for (const meal of ["breakfast", "lunch", "dinner"]) document.getElementById(meal).value = menu[meal];
+            } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+        })();
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const button = document.getElementById("saveButton");
+            button.disabled = true;
+            try {
+                const values = Object.fromEntries(["breakfast", "lunch", "dinner"].map((meal) => [meal, document.getElementById(meal).value]));
+                const result = await hostelApp.request("/api/requests", { method: "PUT", body: JSON.stringify({ action: "update-menu", ...values }) });
+                hostelApp.showMessage(document.getElementById("statusMessage"), result.message);
+            } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+            finally { button.disabled = false; }
+        });
+    </script>
 </body>
 </html>

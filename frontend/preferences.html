@@ -1,53 +1,59 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Food Preferences</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Food preferences · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
-
 <body>
-
-    <h1>Food Preferences</h1>
-
-    <h2>Select Your Preferences</h2>
-
-    <label>
-        <input type="checkbox"> Vegetarian
-    </label>
-
-    <br><br>
-
-    <label>
-        <input type="checkbox"> Non-Vegetarian
-    </label>
-
-    <br><br>
-
-    <label>
-        <input type="checkbox"> Less Spicy Food
-    </label>
-
-    <br><br>
-
-    <button onclick="savePreferences()">Save Preferences</button>
-
-    <br><br>
-
-    <button onclick="window.location.href='student-dashboard.html'">
-        Back to Dashboard
-    </button>
+    <header><div class="brand">SMART HOSTEL · STUDENT PORTAL</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Personalize your meals</p>
+            <h1>Food preferences</h1>
+            <p>Choose the option that best describes your usual meals. You can change it any time.</p>
+            <form id="preferencesForm">
+                <fieldset>
+                    <legend>Diet</legend>
+                    <div class="choice"><input type="radio" id="vegetarian" name="diet" value="vegetarian" checked><label for="vegetarian">Vegetarian</label></div>
+                    <div class="choice"><input type="radio" id="nonVegetarian" name="diet" value="non_vegetarian"><label for="nonVegetarian">Non-vegetarian</label></div>
+                </fieldset>
+                <div class="choice"><input type="checkbox" id="lessSpicy"><label for="lessSpicy">Prefer less spicy food</label></div>
+                <button id="saveButton">Save preferences</button>
+            </form>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="student-dashboard.html">Back to dashboard</a></div>
+    </main>
     <script>
-function savePreferences() {
-    let preferences = document.querySelectorAll("input[type='checkbox']:checked");
-
-    if (preferences.length === 0) {
-        alert("Please select at least one preference.");
-        return;
-    }
-
-    alert("Food preferences saved successfully!");
-}
-</script>
-
+        const form = document.getElementById("preferencesForm");
+        const studentId = hostelApp.studentId();
+        (async () => {
+            try {
+                const { preferences } = await hostelApp.request("/api/preferences/" + encodeURIComponent(studentId));
+                document.querySelector('input[name="diet"][value="' + preferences.diet + '"]').checked = true;
+                document.getElementById("lessSpicy").checked = Boolean(preferences.less_spicy);
+            } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+        })();
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const button = document.getElementById("saveButton");
+            button.disabled = true;
+            try {
+                const result = await hostelApp.request("/api/preferences", {
+                    method: "POST",
+                    body: JSON.stringify({
+                        studentId,
+                        diet: form.elements.diet.value,
+                        lessSpicy: document.getElementById("lessSpicy").checked
+                    })
+                });
+                hostelApp.showMessage(document.getElementById("statusMessage"), result.message);
+            } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+            finally { button.disabled = false; }
+        });
+    </script>
 </body>
 </html>

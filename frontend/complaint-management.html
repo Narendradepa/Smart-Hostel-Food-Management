@@ -1,24 +1,67 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Complaint Management</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Complaint management · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Complaint Management</h1>
-
-    <h2>Student Complaints</h2>
-
-    <p>Student 1: Food was served late.</p>
-    <p>Student 2: Food quality needs improvement.</p>
-    <p>Student 3: Drinking water facility needs attention.</p>
-
-    <br>
-
-    <button onclick="window.location.href='admin-dashboard.html'">
-        Back to Admin Dashboard
-    </button>
-
+    <header><div class="brand">SMART HOSTEL · ADMIN</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">Service follow-up</p>
+            <h1>Complaint management</h1>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+            <div id="complaintList" class="list"><div class="empty">Loading complaints…</div></div>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="admin-dashboard.html">Back to admin dashboard</a></div>
+    </main>
+    <script>
+        async function loadComplaints() {
+            const list = document.getElementById("complaintList");
+            try {
+                const result = await hostelApp.request("/api/requests?view=complaints");
+                list.replaceChildren();
+                if (!result.complaints.length) {
+                    list.append(hostelApp.element("div", "empty", "No complaints have been submitted."));
+                    return;
+                }
+                result.complaints.forEach((entry) => {
+                    const item = hostelApp.element("article", "record");
+                    item.append(hostelApp.element("p", "", entry.message));
+                    item.append(hostelApp.element("small", "", "Complaint #" + entry.id + " · " + entry.status.replace("_", " ") + " · " + new Date(entry.created_at + "Z").toLocaleString()));
+                    const actions = hostelApp.element("div", "actions");
+                    const select = document.createElement("select");
+                    select.setAttribute("aria-label", "Status for complaint " + entry.id);
+                    [["open", "Open"], ["in_review", "In review"], ["resolved", "Resolved"]].forEach(([value, label]) => {
+                        const option = document.createElement("option");
+                        option.value = value;
+                        option.textContent = label;
+                        option.selected = entry.status === value;
+                        select.append(option);
+                    });
+                    const save = hostelApp.element("button", "", "Save status");
+                    save.addEventListener("click", async () => {
+                        save.disabled = true;
+                        try {
+                            const update = await hostelApp.request("/api/requests", {
+                                method: "PUT",
+                                body: JSON.stringify({ action: "update-complaint", id: entry.id, status: select.value })
+                            });
+                            hostelApp.showMessage(document.getElementById("statusMessage"), update.message);
+                            await loadComplaints();
+                        } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+                        finally { save.disabled = false; }
+                    });
+                    actions.append(select, save);
+                    item.append(actions);
+                    list.append(item);
+                });
+            } catch (error) { list.replaceChildren(hostelApp.element("div", "empty", "Could not load complaints. Admin access may be required. " + error.message)); }
+        }
+        loadComplaints();
+    </script>
 </body>
 </html>

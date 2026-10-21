@@ -1,38 +1,52 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Admin Dashboard</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Admin dashboard · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
-
 <body>
-
-    <h1>Admin Dashboard</h1>
-
-    <p>Hostel Food Management Administration</p>
-
-    <hr>
-
-    <h2>Admin Services</h2>
-
-    <button onclick="window.location.href='menu-management.html'">
-    Menu Management
-</button>
-    <button onclick="window.location.href='feedback-management.html'">
-    Feedback Management
-</button>
-    <button onclick="window.location.href='request-management.html'">
-    Request Management
-</button>
-    <button onclick="window.location.href='complaint-management.html'">
-    Complaint Management
-</button>
-    <button onclick="window.location.href='staff-performance.html'">
-    Staff Performance
-</button>
-    <button onclick="window.location.href='reports.html'">
-    Reports
-</button>
-
+    <header><div class="brand">SMART HOSTEL · ADMINISTRATION</div></header>
+    <main>
+        <section class="hero">
+            <p class="eyebrow">Kitchen overview</p>
+            <h1>Admin dashboard</h1>
+            <p>Manage today's menu, student requests, feedback, and complaints.</p>
+            <div id="stats" class="stats"><div class="stat"><span>Loading summary…</span></div></div>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <section class="card-grid">
+            <a class="card" href="menu-management.html"><h3>Menu management</h3><p>Publish breakfast, lunch, and dinner.</p></a>
+            <a class="card" href="request-management.html"><h3>Food requests</h3><p>Review requests and update their status.</p></a>
+            <a class="card" href="feedback-management.html"><h3>Student feedback</h3><p>Read and acknowledge feedback.</p></a>
+            <a class="card" href="complaint-management.html"><h3>Complaints</h3><p>Track and resolve service issues.</p></a>
+            <a class="card" href="staff-performance.html"><h3>Staff ratings</h3><p>Review submitted service ratings.</p></a>
+            <a class="card" href="reports.html"><h3>Reports</h3><p>See live service totals.</p></a>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="index.html">Public home</a></div>
+    </main>
+    <script>
+        (async () => {
+            try {
+                const { reports } = await hostelApp.request("/api/requests?view=summary");
+                const stats = document.getElementById("stats");
+                stats.replaceChildren();
+                [
+                    ["Pending requests", reports.pending_requests],
+                    ["Feedback", reports.total_feedback],
+                    ["Open complaints", reports.open_complaints],
+                    ["Average rating", reports.average_rating === null ? "—" : reports.average_rating + " / 5"]
+                ].forEach(([label, value]) => {
+                    const card = hostelApp.element("div", "stat");
+                    card.append(hostelApp.element("strong", "", value), hostelApp.element("span", "", label));
+                    stats.append(card);
+                });
+            } catch (error) {
+                hostelApp.showMessage(document.getElementById("statusMessage"), "Admin access is required to view dashboard data. " + error.message, false);
+            }
+        })();
+    </script>
 </body>
 </html>

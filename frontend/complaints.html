@@ -1,41 +1,42 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
 <head>
-    <title>Complaints</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Food complaint · Smart Hostel Food</title>
     <link rel="stylesheet" href="style.css">
+    <script defer src="app.js"></script>
 </head>
 <body>
-
-    <h1>Food Complaint</h1>
-
-    <p>Submit your complaint about the hostel food service.</p>
-
-    <label>Complaint:</label><br>
-
-    <textarea rows="5" cols="40"
-        placeholder="Enter your complaint"></textarea>
-
-    <br><br>
-
-    <button onclick="submitComplaint()">Submit Complaint</button>
-
-    <br><br>
-
-    <button onclick="window.location.href='student-dashboard.html'">
-        Back to Dashboard
-    </button>
+    <header><div class="brand">SMART HOSTEL · STUDENT PORTAL</div></header>
+    <main>
+        <section class="panel">
+            <p class="eyebrow">We want to know</p>
+            <h1>Food service complaint</h1>
+            <p>Describe the issue so the food team can review it and update its status.</p>
+            <form id="complaintForm">
+                <div><label for="message">What happened?</label><textarea id="message" maxlength="2000" required placeholder="Describe the food service issue"></textarea></div>
+                <button id="submitButton">Send complaint</button>
+            </form>
+            <p id="statusMessage" class="notice" role="status" aria-live="polite"></p>
+        </section>
+        <div class="toolbar"><a class="button secondary" href="student-dashboard.html">Back to dashboard</a><a class="button secondary" href="notifications.html">My notifications</a></div>
+    </main>
     <script>
-function submitComplaint() {
-    let complaint = document.querySelector("textarea").value;
-
-    if (complaint.trim() === "") {
-        alert("Please enter your complaint.");
-        return;
-    }
-
-    alert("Complaint submitted successfully!");
-}
-</script>
-
+        document.getElementById("complaintForm").addEventListener("submit", async (event) => {
+            event.preventDefault();
+            const button = document.getElementById("submitButton");
+            button.disabled = true;
+            try {
+                const result = await hostelApp.request("/api/complaints/submit", {
+                    method: "POST",
+                    body: JSON.stringify({ studentId: hostelApp.studentId(), message: document.getElementById("message").value })
+                });
+                hostelApp.showMessage(document.getElementById("statusMessage"), result.message);
+                event.currentTarget.reset();
+            } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
+            finally { button.disabled = false; }
+        });
+    </script>
 </body>
 </html>
