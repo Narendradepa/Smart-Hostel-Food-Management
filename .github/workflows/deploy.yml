@@ -1,21 +1,30 @@
 
-name: Deploy Hostel Food Management
+name: Deploy Smart Hostel Food Management
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smart-hostel-production
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    name: Test, archive frontend in S3, and deploy through SSM
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: read
+      id-token: write
     steps:
-      - name: Checkout code
+      - name: Check out source
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -28,14 +37,54 @@ jobs:
           npm ci
           npm test
 
-      - name: Deploy to AWS EC2
-        uses: appleboy/ssh-action@v1.2.0
+      - name: Assume the project deployment role
+        uses: aws-actions/configure-aws-credentials@v6.3.0
         with:
-          host: ${{ secrets.EC2_HOST }}
-          username: ${{ secrets.EC2_USER }}
-          key: ${{ secrets.EC2_SSH_KEY }}
-          script: |
-            cd ~/Smart-Hostel-Food-Management
-            git pull origin main
-            cd backend
-            npm ci
+          role-to-assume: arn:aws:iam::375255020830:role/SmartHostelGitHubDeployRole
+          aws-region: us-east-1
+          role-session-name: hostel-deploy-${{ github.run_id }}
+
+      - name: Store private frontend copy in S3
+        run: >-
+          aws s3 sync frontend/
+          s3://smart-hostel-food-management-2026m/frontend/
+          --no-progress
+
+      - name: Deploy to the EC2 instance with Systems Manager
+        shell: bash
+        run: |
+          cat > "$RUNNER_TEMP/ssm-command.json" <<'JSON'
+          {
+            "DocumentName": "AWS-RunShellScript",
+            "InstanceIds": ["i-00684a0067bf2306f"],
+            "Comment": "Smart Hostel deployment ${{ github.sha }}",
+            "TimeoutSeconds": 600,
+            "Parameters": {
+              "commands": [
+                "set -e; cd /home/ec2-user/Smart-Hostel-Food-Management && git pull --ff-only origin main && npm ci --prefix backend && sudo systemctl restart hostel-food && sudo systemctl is-active --quiet hostel-food"
+              ]
+            }
+          }
+          JSON
+
+          command_id=$(aws ssm send-command \
+            --cli-input-json "file://$RUNNER_TEMP/ssm-command.json" \
+            --query 'Command.CommandId' \
+            --output text)
+
+          if aws ssm wait command-executed \
+            --command-id "$command_id" \
+            --instance-id i-00684a0067bf2306f; then
+            aws ssm get-command-invocation \
+              --command-id "$command_id" \
+              --instance-id i-00684a0067bf2306f \
+              --query StandardOutputContent \
+              --output text
+          else
+            aws ssm get-command-invocation \
+              --command-id "$command_id" \
+              --instance-id i-00684a0067bf2306f \
+              --query StandardErrorContent \
+              --output text
+            exit 1
+          fi

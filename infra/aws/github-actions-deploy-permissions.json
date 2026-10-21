@@ -1,0 +1,50 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ReadProjectBucketRegion",
+      "Effect": "Allow",
+      "Action": "s3:GetBucketLocation",
+      "Resource": "arn:aws:s3:::smart-hostel-food-management-2026m"
+    },
+    {
+      "Sid": "PublishFrontendToPrivateProjectBucket",
+      "Effect": "Allow",
+      "Action": "s3:ListBucket",
+      "Resource": "arn:aws:s3:::smart-hostel-food-management-2026m",
+      "Condition": {
+        "StringLike": {
+          "s3:prefix": [
+            "frontend",
+            "frontend/*"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "ReadAndPublishFrontendObjects",
+      "Effect": "Allow",
+      "Action": [
+        "s3:GetObject",
+        "s3:PutObject",
+        "s3:AbortMultipartUpload"
+      ],
+      "Resource": "arn:aws:s3:::smart-hostel-food-management-2026m/frontend/*"
+    },
+    {
+      "Sid": "RunDeploymentOnlyOnProjectInstance",
+      "Effect": "Allow",
+      "Action": "ssm:SendCommand",
+      "Resource": [
+        "arn:aws:ssm:us-east-1::document/AWS-RunShellScript",
+        "arn:aws:ec2:us-east-1:375255020830:instance/i-00684a0067bf2306f"
+      ]
+    },
+    {
+      "Sid": "ReadDeploymentCommandResult",
+      "Effect": "Allow",
+      "Action": "ssm:GetCommandInvocation",
+      "Resource": "*"
+    }
+  ]
+}
