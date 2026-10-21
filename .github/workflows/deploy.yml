@@ -61,7 +61,7 @@ jobs:
             "TimeoutSeconds": 600,
             "Parameters": {
               "commands": [
-                "set -e; cd /home/ec2-user/Smart-Hostel-Food-Management && git pull --ff-only origin main && npm ci --prefix backend && sudo systemctl restart hostel-food && sudo systemctl is-active --quiet hostel-food"
+                "set -e; cd /home/ec2-user/Smart-Hostel-Food-Management && git -c safe.directory=/home/ec2-user/Smart-Hostel-Food-Management pull --ff-only origin main && npm ci --prefix backend && sudo systemctl restart hostel-food && sudo systemctl is-active --quiet hostel-food"
               ]
             }
           }
