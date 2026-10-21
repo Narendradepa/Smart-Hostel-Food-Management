@@ -1,6 +1,5 @@
 
 const express = require("express");
-const cors = require("cors");
 const path = require("path");
 const db = require("../database/db");
 
@@ -10,7 +9,6 @@ const PORT = process.env.PORT || 3000;
 // Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 // Home route
@@ -49,8 +47,9 @@ app.get("/api/requests", (req, res) => {
     }
 });
 
-// Submit a new food request
-app.post("/api/requests", (req, res) => {
+// Submit a new food request. The public form uses /submit so Nginx can
+// protect the admin-only GET /api/requests endpoint with HTTP Basic Auth.
+function submitFoodRequest(req, res) {
     const { foodItem, quantity, notes } = req.body;
 
     const cleanFoodItem =
@@ -126,12 +125,15 @@ app.post("/api/requests", (req, res) => {
             message: "Could not save the food request."
         });
     }
-});
+}
+
+app.post("/api/requests", submitFoodRequest);
+app.post("/api/requests/submit", submitFoodRequest);
 
 // Start the server
 // Start the server only when this file is run directly.
 if (require.main === module) {
-    app.listen(PORT, () => {
+    app.listen(PORT, "127.0.0.1", () => {
         console.log(`Server is running at http://localhost:${PORT}`);
     });
 }
