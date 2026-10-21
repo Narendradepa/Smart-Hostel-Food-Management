@@ -61,7 +61,11 @@ jobs:
             "TimeoutSeconds": 600,
             "Parameters": {
               "commands": [
-                "set -e; cd /home/ec2-user/Smart-Hostel-Food-Management && git -c safe.directory=/home/ec2-user/Smart-Hostel-Food-Management pull --ff-only origin main && npm ci --prefix backend && sudo systemctl restart hostel-food && sudo systemctl is-active --quiet hostel-food"
+                "set -e",
+                "cd /home/ec2-user/Smart-Hostel-Food-Management && git -c safe.directory=/home/ec2-user/Smart-Hostel-Food-Management pull --ff-only origin main",
+                "web_root=$(sudo nginx -T 2>/dev/null | awk '$1 == \"root\" {gsub(/;/, \"\", $2); print $2; exit}'); if [ -z \"$web_root\" ] || [ ! -d \"$web_root\" ]; then echo 'Could not find the Nginx document root' >&2; exit 1; fi; if [ \"$web_root\" != \"/home/ec2-user/Smart-Hostel-Food-Management/frontend\" ]; then sudo cp -a /home/ec2-user/Smart-Hostel-Food-Management/frontend/. \"$web_root\"/; fi",
+                "npm ci --prefix /home/ec2-user/Smart-Hostel-Food-Management/backend",
+                "sudo systemctl restart hostel-food && sudo systemctl is-active --quiet hostel-food"
               ]
             }
           }
