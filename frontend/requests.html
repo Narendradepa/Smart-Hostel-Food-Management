@@ -28,6 +28,7 @@
     <script>
         document.getElementById("foodRequestForm").addEventListener("submit", async (event) => {
             event.preventDefault();
+            const form = event.currentTarget;
             const button = document.getElementById("submitButton");
             button.disabled = true;
             try {
@@ -39,7 +40,7 @@
                 };
                 const result = await hostelApp.request("/api/requests/submit", { method: "POST", body: JSON.stringify(body) });
                 hostelApp.showMessage(document.getElementById("statusMessage"), result.message);
-                event.currentTarget.reset();
+                form.reset();
                 document.getElementById("quantity").value = "1";
             } catch (error) {
                 hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false);

@@ -25,6 +25,7 @@
     <script>
         document.getElementById("feedbackForm").addEventListener("submit", async (event) => {
             event.preventDefault();
+            const form = event.currentTarget;
             const button = document.getElementById("submitButton");
             button.disabled = true;
             try {
@@ -33,7 +34,7 @@
                     body: JSON.stringify({ studentId: hostelApp.studentId(), message: document.getElementById("message").value })
                 });
                 hostelApp.showMessage(document.getElementById("statusMessage"), result.message);
-                event.currentTarget.reset();
+                form.reset();
             } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
             finally { button.disabled = false; }
         });

@@ -30,6 +30,7 @@
     <script>
         document.getElementById("ratingForm").addEventListener("submit", async (event) => {
             event.preventDefault();
+            const form = event.currentTarget;
             const button = document.getElementById("submitButton");
             button.disabled = true;
             try {
@@ -42,7 +43,7 @@
                     })
                 });
                 hostelApp.showMessage(document.getElementById("statusMessage"), result.message);
-                event.currentTarget.reset();
+                form.reset();
             } catch (error) { hostelApp.showMessage(document.getElementById("statusMessage"), error.message, false); }
             finally { button.disabled = false; }
         });
