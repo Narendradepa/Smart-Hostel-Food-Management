@@ -5,6 +5,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      storage_backend:
+        description: Database backend for the EC2 application (create the DynamoDB stack first)
+        required: true
+        type: choice
+        options:
+          - sqlite
+          - dynamodb
+        default: sqlite
 
 permissions:
   contents: read
@@ -17,6 +26,8 @@ jobs:
   deploy:
     name: Test, archive frontend in S3, and deploy through SSM
     runs-on: ubuntu-latest
+    env:
+      HOSTEL_STORAGE_BACKEND: ${{ github.event.inputs.storage_backend || 'sqlite' }}
     permissions:
       contents: read
       id-token: write
@@ -65,6 +76,9 @@ jobs:
                 "cd /home/ec2-user/Smart-Hostel-Food-Management && git -c safe.directory=/home/ec2-user/Smart-Hostel-Food-Management pull --ff-only origin main",
                 "web_root=$(sudo nginx -T 2>/dev/null | awk '$1 == \"root\" {gsub(/;/, \"\", $2); print $2; exit}'); if [ -z \"$web_root\" ] || [ ! -d \"$web_root\" ]; then echo 'Could not find the Nginx document root' >&2; exit 1; fi; if [ \"$web_root\" != \"/home/ec2-user/Smart-Hostel-Food-Management/frontend\" ]; then sudo cp -a /home/ec2-user/Smart-Hostel-Food-Management/frontend/. \"$web_root\"/; fi",
                 "npm ci --prefix /home/ec2-user/Smart-Hostel-Food-Management/backend",
+                "sudo install -d -m 0755 /etc/systemd/system/hostel-food.service.d",
+                "case '${{ env.HOSTEL_STORAGE_BACKEND }}' in dynamodb) printf '%s\\n' '[Service]' 'Environment=HOSTEL_STORAGE=dynamodb' 'Environment=AWS_REGION=us-east-1' 'Environment=DYNAMODB_TABLE_PREFIX=SmartHostelFoodManagement-' | sudo tee /etc/systemd/system/hostel-food.service.d/50-smart-hostel-dynamodb.conf >/dev/null ;; sqlite) printf '%s\\n' '[Service]' 'Environment=HOSTEL_STORAGE=sqlite' 'Environment=AWS_REGION=us-east-1' | sudo tee /etc/systemd/system/hostel-food.service.d/50-smart-hostel-dynamodb.conf >/dev/null ;; *) echo 'Unsupported storage backend' >&2; exit 2 ;; esac",
+                "sudo systemctl daemon-reload",
                 "sudo systemctl restart hostel-food && sudo systemctl is-active --quiet hostel-food"
               ]
             }

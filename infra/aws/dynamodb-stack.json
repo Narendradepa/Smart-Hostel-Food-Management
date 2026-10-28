@@ -1,0 +1,181 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "On-demand DynamoDB storage for Smart Hostel Food Management, with least-privilege access for the EC2 application role.",
+  "Parameters": {
+    "TableNamePrefix": {
+      "Type": "String",
+      "Default": "SmartHostelFoodManagement-",
+      "AllowedPattern": "^[A-Za-z0-9_.-]{3,180}$",
+      "Description": "Prefix for the seven hostel application tables."
+    }
+  },
+  "Resources": {
+    "FoodRequests": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": { "Fn::Sub": "${TableNamePrefix}FoodRequests" },
+        "BillingMode": "PAY_PER_REQUEST",
+        "DeletionProtectionEnabled": true,
+        "AttributeDefinitions": [{ "AttributeName": "id", "AttributeType": "N" }],
+        "KeySchema": [{ "AttributeName": "id", "KeyType": "HASH" }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "Menus": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": { "Fn::Sub": "${TableNamePrefix}Menus" },
+        "BillingMode": "PAY_PER_REQUEST",
+        "DeletionProtectionEnabled": true,
+        "AttributeDefinitions": [{ "AttributeName": "menu_date", "AttributeType": "S" }],
+        "KeySchema": [{ "AttributeName": "menu_date", "KeyType": "HASH" }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "FoodPreferences": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": { "Fn::Sub": "${TableNamePrefix}FoodPreferences" },
+        "BillingMode": "PAY_PER_REQUEST",
+        "DeletionProtectionEnabled": true,
+        "AttributeDefinitions": [{ "AttributeName": "student_id", "AttributeType": "S" }],
+        "KeySchema": [{ "AttributeName": "student_id", "KeyType": "HASH" }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "Feedback": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": { "Fn::Sub": "${TableNamePrefix}Feedback" },
+        "BillingMode": "PAY_PER_REQUEST",
+        "DeletionProtectionEnabled": true,
+        "AttributeDefinitions": [{ "AttributeName": "id", "AttributeType": "N" }],
+        "KeySchema": [{ "AttributeName": "id", "KeyType": "HASH" }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "Complaints": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": { "Fn::Sub": "${TableNamePrefix}Complaints" },
+        "BillingMode": "PAY_PER_REQUEST",
+        "DeletionProtectionEnabled": true,
+        "AttributeDefinitions": [{ "AttributeName": "id", "AttributeType": "N" }],
+        "KeySchema": [{ "AttributeName": "id", "KeyType": "HASH" }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "StaffRatings": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": { "Fn::Sub": "${TableNamePrefix}StaffRatings" },
+        "BillingMode": "PAY_PER_REQUEST",
+        "DeletionProtectionEnabled": true,
+        "AttributeDefinitions": [{ "AttributeName": "id", "AttributeType": "N" }],
+        "KeySchema": [{ "AttributeName": "id", "KeyType": "HASH" }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "Notifications": {
+      "Type": "AWS::DynamoDB::Table",
+      "DeletionPolicy": "Retain",
+      "UpdateReplacePolicy": "Retain",
+      "Properties": {
+        "TableName": { "Fn::Sub": "${TableNamePrefix}Notifications" },
+        "BillingMode": "PAY_PER_REQUEST",
+        "DeletionProtectionEnabled": true,
+        "AttributeDefinitions": [
+          { "AttributeName": "id", "AttributeType": "N" },
+          { "AttributeName": "student_id", "AttributeType": "S" },
+          { "AttributeName": "created_at", "AttributeType": "S" }
+        ],
+        "KeySchema": [{ "AttributeName": "id", "KeyType": "HASH" }],
+        "GlobalSecondaryIndexes": [{
+          "IndexName": "StudentCreatedAtIndex",
+          "KeySchema": [
+            { "AttributeName": "student_id", "KeyType": "HASH" },
+            { "AttributeName": "created_at", "KeyType": "RANGE" }
+          ],
+          "Projection": { "ProjectionType": "ALL" }
+        }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "SmartHostelEc2Role": {
+      "Type": "AWS::IAM::Role",
+      "Properties": {
+        "RoleName": "SmartHostelFoodManagement-EC2Role",
+        "Description": "Runtime role for the Smart Hostel Food Management EC2 application.",
+        "AssumeRolePolicyDocument": {
+          "Version": "2012-10-17",
+          "Statement": [{
+            "Effect": "Allow",
+            "Principal": { "Service": "ec2.amazonaws.com" },
+            "Action": "sts:AssumeRole"
+          }]
+        },
+        "ManagedPolicyArns": [
+          "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+          "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+        ],
+        "Policies": [{
+          "PolicyName": "SmartHostelFoodDynamoDBAccess",
+          "PolicyDocument": {
+            "Version": "2012-10-17",
+            "Statement": [{
+              "Effect": "Allow",
+              "Action": [
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem",
+                "dynamodb:Scan",
+                "dynamodb:Query"
+              ],
+              "Resource": [
+                { "Fn::GetAtt": ["FoodRequests", "Arn"] },
+                { "Fn::GetAtt": ["Menus", "Arn"] },
+                { "Fn::GetAtt": ["FoodPreferences", "Arn"] },
+                { "Fn::GetAtt": ["Feedback", "Arn"] },
+                { "Fn::GetAtt": ["Complaints", "Arn"] },
+                { "Fn::GetAtt": ["StaffRatings", "Arn"] },
+                { "Fn::GetAtt": ["Notifications", "Arn"] },
+                { "Fn::Sub": "${Notifications.Arn}/index/*" }
+              ]
+            }]
+          }
+        }],
+        "Tags": [{ "Key": "Project", "Value": "SmartHostelFoodManagement" }]
+      }
+    },
+    "SmartHostelEc2InstanceProfile": {
+      "Type": "AWS::IAM::InstanceProfile",
+      "Properties": {
+        "InstanceProfileName": "SmartHostelFoodManagement-EC2Profile",
+        "Roles": [{ "Ref": "SmartHostelEc2Role" }]
+      }
+    }
+  },
+  "Outputs": {
+    "FoodRequestsTableName": { "Value": { "Ref": "FoodRequests" } },
+    "MenusTableName": { "Value": { "Ref": "Menus" } },
+    "FoodPreferencesTableName": { "Value": { "Ref": "FoodPreferences" } },
+    "FeedbackTableName": { "Value": { "Ref": "Feedback" } },
+    "ComplaintsTableName": { "Value": { "Ref": "Complaints" } },
+    "StaffRatingsTableName": { "Value": { "Ref": "StaffRatings" } },
+    "NotificationsTableName": { "Value": { "Ref": "Notifications" } },
+    "Ec2RoleName": { "Value": { "Ref": "SmartHostelEc2Role" } },
+    "Ec2InstanceProfileName": { "Value": { "Ref": "SmartHostelEc2InstanceProfile" } }
+  }
+}

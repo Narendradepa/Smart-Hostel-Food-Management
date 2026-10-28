@@ -1,7 +1,6 @@
 const express = require("express");
 const path = require("path");
-const crypto = require("crypto");
-const db = require("../database/db");
+const storage = require("./storage");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -9,10 +8,18 @@ const STUDENT_ID_PATTERN = /^[a-zA-Z0-9_-]{8,80}$/;
 
 app.use(express.json({ limit: "32kb" }));
 app.use(express.urlencoded({ extended: true, limit: "32kb" }));
+app.use((req, res, next) => {
+    req.body = req.body || {};
+    next();
+});
 app.use(express.static(path.join(__dirname, "../frontend")));
 
 app.get("/api/status", (req, res) => {
-    res.json({ success: true, message: "Smart Hostel Food Management API is working!" });
+    res.json({
+        success: true,
+        message: "Smart Hostel Food Management API is working!",
+        storage: storage.provider
+    });
 });
 
 function studentIdFrom(value) {
@@ -27,9 +34,11 @@ function cleanText(value, limit, required = false) {
     return text;
 }
 
-function addNotification(studentId, message) {
-    db.prepare("INSERT INTO notifications (student_id, message) VALUES (?, ?)")
-        .run(studentId || null, message);
+async function addNotification(studentId, message) {
+    return storage.insert("notifications", {
+        student_id: studentId || null,
+        message
+    });
 }
 
 function today() {
@@ -40,71 +49,37 @@ function fail(res, status, message) {
     return res.status(status).json({ success: false, message });
 }
 
-function ensureTodayMenu() {
-    const exists = db.prepare("SELECT 1 FROM menus WHERE menu_date = ?").get(today());
-    if (exists) return;
-    const previous = db.prepare("SELECT breakfast, lunch, dinner FROM menus ORDER BY menu_date DESC LIMIT 1").get();
-    if (previous) {
-        db.prepare("INSERT OR IGNORE INTO menus (menu_date, breakfast, lunch, dinner) VALUES (?, ?, ?, ?)")
-            .run(today(), previous.breakfast, previous.lunch, previous.dinner);
-    }
-}
-
-app.get("/api/menu", (req, res) => {
-    ensureTodayMenu();
-    const menu = db.prepare(`
-        SELECT menu_date, breakfast, lunch, dinner, updated_at
-        FROM menus WHERE menu_date = ?
-    `).get(today());
+app.get("/api/menu", async (req, res) => {
+    const menu = await storage.getMenu(today());
     res.json({ success: true, menu });
 });
 
-// This exact endpoint is protected by the EC2 Nginx Basic Auth rule. All
-// administration reads and writes use it so student submissions stay public.
-app.get("/api/requests", (req, res) => {
+// The /api/requests admin reads and writes are protected by the EC2 Nginx
+// Basic Auth rule. Student submissions use the dedicated public POST routes.
+app.get("/api/requests", async (req, res) => {
     const view = req.query.view || "requests";
-    const reports = db.prepare(`
-        SELECT
-            (SELECT COUNT(*) FROM food_requests) AS total_requests,
-            (SELECT COUNT(*) FROM food_requests WHERE status = 'pending') AS pending_requests,
-            (SELECT COUNT(*) FROM feedback) AS total_feedback,
-            (SELECT COUNT(*) FROM complaints) AS total_complaints,
-            (SELECT COUNT(*) FROM complaints WHERE status != 'resolved') AS open_complaints,
-            (SELECT COUNT(*) FROM staff_ratings) AS total_ratings,
-            (SELECT ROUND(AVG(rating), 1) FROM staff_ratings) AS average_rating
-    `).get();
+    const reports = await storage.getReports();
 
     if (view === "summary" || view === "reports") {
         return res.json({ success: true, reports });
     }
     if (view === "feedback") {
-        return res.json({
-            success: true,
-            feedback: db.prepare("SELECT * FROM feedback ORDER BY id DESC LIMIT 200").all()
-        });
+        return res.json({ success: true, feedback: await storage.list("feedback") });
     }
     if (view === "complaints") {
-        return res.json({
-            success: true,
-            complaints: db.prepare("SELECT * FROM complaints ORDER BY id DESC LIMIT 200").all()
-        });
+        return res.json({ success: true, complaints: await storage.list("complaints") });
     }
     if (view === "ratings") {
         return res.json({
             success: true,
-            ratings: db.prepare("SELECT * FROM staff_ratings ORDER BY id DESC LIMIT 200").all(),
+            ratings: await storage.list("staff_ratings"),
             reports
         });
     }
-
-    const requests = db.prepare(`
-        SELECT id, food_item, quantity, notes, student_id, status, created_at
-        FROM food_requests ORDER BY id DESC LIMIT 200
-    `).all();
-    return res.json({ success: true, requests });
+    return res.json({ success: true, requests: await storage.list("food_requests") });
 });
 
-app.put("/api/requests", (req, res) => {
+app.put("/api/requests", async (req, res) => {
     const { action } = req.body || {};
 
     if (action === "update-menu") {
@@ -114,16 +89,8 @@ app.put("/api/requests", (req, res) => {
         if (breakfast === null || lunch === null || dinner === null) {
             return fail(res, 400, "Enter all three meals (up to 300 characters each).");
         }
-        db.prepare(`
-            INSERT INTO menus (menu_date, breakfast, lunch, dinner, updated_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT(menu_date) DO UPDATE SET
-                breakfast = excluded.breakfast,
-                lunch = excluded.lunch,
-                dinner = excluded.dinner,
-                updated_at = CURRENT_TIMESTAMP
-        `).run(today(), breakfast, lunch, dinner);
-        addNotification(null, "Today's food menu was updated.");
+        await storage.saveMenu(today(), { breakfast, lunch, dinner });
+        await addNotification(null, "Today's food menu was updated.");
         return res.json({ success: true, message: "Today's menu was updated." });
     }
 
@@ -131,41 +98,43 @@ app.put("/api/requests", (req, res) => {
         const id = Number(req.body.id);
         const status = req.body.status;
         const validStatuses = ["pending", "approved", "preparing", "completed", "rejected"];
-        if (!Number.isInteger(id) || !validStatuses.includes(status)) {
+        if (!Number.isInteger(id) || id < 1 || !validStatuses.includes(status)) {
             return fail(res, 400, "Choose a valid request and status.");
         }
-        const request = db.prepare("SELECT student_id FROM food_requests WHERE id = ?").get(id);
+        const request = await storage.get("food_requests", id);
         if (!request) return fail(res, 404, "Food request was not found.");
-        db.prepare("UPDATE food_requests SET status = ? WHERE id = ?").run(status, id);
-        if (request.student_id) addNotification(request.student_id, `Food request #${id} is now ${status}.`);
+        await storage.update("food_requests", id, { status });
+        if (request.student_id) await addNotification(request.student_id, `Food request #${id} is now ${status}.`);
         return res.json({ success: true, message: `Request #${id} updated to ${status}.` });
     }
 
     if (action === "acknowledge-feedback") {
         const id = Number(req.body.id);
-        const result = db.prepare("UPDATE feedback SET status = 'acknowledged' WHERE id = ?").run(id);
-        if (!result.changes) return fail(res, 404, "Feedback was not found.");
+        if (!Number.isInteger(id) || id < 1) return fail(res, 400, "Choose valid feedback.");
+        const updated = await storage.update("feedback", id, { status: "acknowledged" });
+        if (!updated) return fail(res, 404, "Feedback was not found.");
         return res.json({ success: true, message: "Feedback acknowledged." });
     }
 
     if (action === "update-complaint") {
         const id = Number(req.body.id);
         const status = req.body.status;
-        if (!Number.isInteger(id) || !["open", "in_review", "resolved"].includes(status)) {
+        if (!Number.isInteger(id) || id < 1 || !["open", "in_review", "resolved"].includes(status)) {
             return fail(res, 400, "Choose a valid complaint and status.");
         }
-        const complaint = db.prepare("SELECT student_id FROM complaints WHERE id = ?").get(id);
+        const complaint = await storage.get("complaints", id);
         if (!complaint) return fail(res, 404, "Complaint was not found.");
-        db.prepare("UPDATE complaints SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?")
-            .run(status, id);
-        if (complaint.student_id) addNotification(complaint.student_id, `Your complaint #${id} is now ${status.replace("_", " ")}.`);
+        await storage.update("complaints", id, { status, updated_at: new Date().toISOString() });
+        if (complaint.student_id) {
+            await addNotification(complaint.student_id, `Your complaint #${id} is now ${status.replace("_", " ")}.`);
+        }
         return res.json({ success: true, message: `Complaint #${id} updated.` });
     }
 
     return fail(res, 400, "Unknown administration action.");
 });
 
-function submitFoodRequest(req, res) {
+async function submitFoodRequest(req, res) {
     const foodItem = cleanText(req.body.foodItem, 100, true);
     const notes = cleanText(req.body.notes || "", 500);
     const quantity = Number(req.body.quantity);
@@ -176,15 +145,17 @@ function submitFoodRequest(req, res) {
     }
     const studentId = studentIdFrom(req.body.studentId);
     try {
-        const result = db.prepare(`
-            INSERT INTO food_requests (food_item, quantity, notes, student_id)
-            VALUES (?, ?, ?, ?)
-        `).run(foodItem, quantity, notes, studentId);
-        if (studentId) addNotification(studentId, `Food request #${result.lastInsertRowid} was received.`);
+        const request = await storage.insert("food_requests", {
+            food_item: foodItem,
+            quantity,
+            notes,
+            student_id: studentId
+        });
+        if (studentId) await addNotification(studentId, `Food request #${request.id} was received.`);
         return res.status(201).json({
             success: true,
             message: "Food request received.",
-            request: { id: result.lastInsertRowid, foodItem, quantity, notes, status: "pending" }
+            request: { id: request.id, foodItem, quantity, notes, status: "pending" }
         });
     } catch (error) {
         console.error("Food request save failed:", error);
@@ -195,40 +166,32 @@ function submitFoodRequest(req, res) {
 app.post("/api/requests", submitFoodRequest);
 app.post("/api/requests/submit", submitFoodRequest);
 
-app.get("/api/preferences/:studentId", (req, res) => {
+app.get("/api/preferences/:studentId", async (req, res) => {
     const studentId = studentIdFrom(req.params.studentId);
     if (!studentId) return fail(res, 400, "Invalid student session.");
-    const preferences = db.prepare(`
-        SELECT diet, less_spicy, updated_at FROM food_preferences WHERE student_id = ?
-    `).get(studentId) || { diet: "vegetarian", less_spicy: 0 };
+    const preferences = await storage.getPreference(studentId);
     res.json({ success: true, preferences });
 });
 
-app.post("/api/preferences", (req, res) => {
+app.post("/api/preferences", async (req, res) => {
     const studentId = studentIdFrom(req.body.studentId);
     const { diet, lessSpicy } = req.body;
     if (!studentId || !["vegetarian", "non_vegetarian"].includes(diet) || typeof lessSpicy !== "boolean") {
         return fail(res, 400, "Choose a diet and spice preference.");
     }
-    db.prepare(`
-        INSERT INTO food_preferences (student_id, diet, less_spicy, updated_at)
-        VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-        ON CONFLICT(student_id) DO UPDATE SET
-            diet = excluded.diet, less_spicy = excluded.less_spicy, updated_at = CURRENT_TIMESTAMP
-    `).run(studentId, diet, Number(lessSpicy));
-    addNotification(studentId, "Your food preferences were saved.");
+    await storage.savePreference(studentId, diet, lessSpicy);
+    await addNotification(studentId, "Your food preferences were saved.");
     res.json({ success: true, message: "Food preferences saved." });
 });
 
-function submitTextRecord(table, label) {
-    return (req, res) => {
+function submitTextRecord(entity, label) {
+    return async (req, res) => {
         const studentId = studentIdFrom(req.body.studentId);
         const message = cleanText(req.body.message, 2000, true);
         if (!studentId) return fail(res, 400, "Refresh this page to start a student session.");
         if (message === null || !message) return fail(res, 400, `Enter ${label.toLowerCase()} (up to 2,000 characters).`);
-        const result = db.prepare(`INSERT INTO ${table} (student_id, message) VALUES (?, ?)`)
-            .run(studentId, message);
-        addNotification(studentId, `${label} #${result.lastInsertRowid} was received.`);
+        const record = await storage.insert(entity, { student_id: studentId, message });
+        await addNotification(studentId, `${label} #${record.id} was received.`);
         return res.status(201).json({ success: true, message: `${label} received.` });
     };
 }
@@ -236,35 +199,36 @@ function submitTextRecord(table, label) {
 app.post("/api/feedback/submit", submitTextRecord("feedback", "Feedback"));
 app.post("/api/complaints/submit", submitTextRecord("complaints", "Complaint"));
 
-app.post("/api/ratings/submit", (req, res) => {
+app.post("/api/ratings/submit", async (req, res) => {
     const studentId = studentIdFrom(req.body.studentId);
     const rating = Number(req.body.rating);
     const comment = cleanText(req.body.comment || "", 500);
     if (!studentId || !Number.isInteger(rating) || rating < 1 || rating > 5 || comment === null) {
         return fail(res, 400, "Select a rating from 1 to 5 and keep comments under 500 characters.");
     }
-    db.prepare("INSERT INTO staff_ratings (student_id, rating, comment) VALUES (?, ?, ?)")
-        .run(studentId, rating, comment);
-    addNotification(studentId, "Your staff rating was submitted.");
+    await storage.insert("staff_ratings", { student_id: studentId, rating, comment });
+    await addNotification(studentId, "Your staff rating was submitted.");
     res.status(201).json({ success: true, message: "Staff rating submitted." });
 });
 
-app.get("/api/notifications/:studentId", (req, res) => {
+app.get("/api/notifications/:studentId", async (req, res) => {
     const studentId = studentIdFrom(req.params.studentId);
     if (!studentId) return fail(res, 400, "Invalid student session.");
-    const notifications = db.prepare(`
-        SELECT id, message, created_at FROM notifications
-        WHERE student_id = ? OR student_id IS NULL
-        ORDER BY id DESC LIMIT 50
-    `).all(studentId);
+    const notifications = await storage.getNotifications(studentId);
     res.json({ success: true, notifications });
+});
+
+app.use((error, req, res, next) => {
+    console.error("Hostel API request failed:", error);
+    if (res.headersSent) return next(error);
+    return fail(res, 500, "The request could not be completed. Please try again.");
 });
 
 app.get("/", (req, res) => res.sendFile(path.join(__dirname, "../frontend/index.html")));
 
 if (require.main === module) {
     app.listen(PORT, "127.0.0.1", () => {
-        console.log(`Server is running at http://localhost:${PORT}`);
+        console.log(`Server is running at http://localhost:${PORT} (storage: ${storage.provider})`);
     });
 }
 
